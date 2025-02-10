@@ -1,6 +1,6 @@
 import streamlit as st
 import sys
-sys.path.append(r'~/Desktop/repo_lzerbib/streamlit_page')
+sys.path.append(r'/Users/lennyzerbib/Desktop/repo_lzerbib/streamlit_page')
 import datetime as dt
 import time
 

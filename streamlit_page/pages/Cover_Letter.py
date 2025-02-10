@@ -4,7 +4,7 @@ from streamlit_pdf_viewer import pdf_viewer
 import os
 
 import sys
-sys.path.append('~/Desktop/repo_lzerbib/streamlit_page/needs')
+sys.path.append('/Users/lennyzerbib/Desktop/repo_lzerbib/streamlit_page/needs')
 import script_cover_letter as script
 
 st.markdown(
@@ -32,8 +32,8 @@ role_user = col_1.text_input('Enter the Role:')
 position_user = col_2.text_input('Enter the Position:')
 perso_adress = col_3.selectbox('Enter the Area:', ['','Paris', 'London', 'New York'])
 
-outputdir = '~/Desktop/repo_lzerbib/streamlit_page/Output/'
-outputdir_aux = '~/Desktop/repo_lzerbib/streamlit_page/Output/'
+outputdir = '/Users/lennyzerbib/Desktop/repo_lzerbib/streamlit_page/Output/'
+outputdir_aux = '/Users/lennyzerbib/Desktop/repo_lzerbib/streamlit_page/Output/'
 
 st.write("")
 st.write('---')
@@ -56,4 +56,4 @@ if len(name_boss)!=0 and len(starting_date)!=0 and len(perso_adress)!=0 and len(
     
 else:
     st.header('Exemple:')
-    pdf_viewer(input=r'~/Desktop/repo_lzerbib/streamlit_page/needs/exemple_cover_letter.pdf', width=700,height=500)
+    pdf_viewer(input=r'/Users/lennyzerbib/Desktop/repo_lzerbib/streamlit_page/needs/exemple_cover_letter.pdf', width=700,height=500)
