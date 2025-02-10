@@ -56,4 +56,4 @@ if len(name_boss)!=0 and len(starting_date)!=0 and len(perso_adress)!=0 and len(
     
 else:
     st.header('Exemple:')
-    pdf_viewer(input=r'/Users/lennyzerbib/Desktop/Dauphine/streamlit_page/needs/exemple_cover_letter.pdf', width=700,height=500)
+    pdf_viewer(input=r'~/Desktop/repo_lzerbib/streamlit_page/needs/exemple_cover_letter.pdf', width=700,height=500)
