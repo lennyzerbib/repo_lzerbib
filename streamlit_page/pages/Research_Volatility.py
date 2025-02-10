@@ -11,8 +11,8 @@ import sys
 
 
 #ENTRER LE PATH VERS L'ENDROIT OU TU AS TELECHARGER LES 2 DOCUMENTS
-sys.path.append('/Users/lennyzerbib/Desktop/Dauphine/203/Mémoire 203')
-import get_volatility as vol
+# sys.path.append('/Users/lennyzerbib/Desktop/Dauphine/203/Mémoire 203')
+import streamlit_page.needs.get_volatility as vol
 
 st.markdown(
     """
