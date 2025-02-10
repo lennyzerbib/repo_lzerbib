@@ -1,6 +1,6 @@
 import streamlit as st
 from PIL import Image
-from streamlit_pdf_viewer import pdf_viewer
+from streamlit_page.needs.script_cover_letter import pdf_viewer
 import os
 
 import sys
