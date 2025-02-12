@@ -3,9 +3,9 @@ from PIL import Image
 from streamlit_pdf_viewer import pdf_viewer
 import os
 
-# import sys
-# sys.path.append('/Users/lennyzerbib/Desktop/repo_lzerbib/streamlit_page/needs')
-import streamlit_page.needs.script_cover_letter as script
+import sys
+sys.path.append('/Users/lennyzerbib/Desktop/repo_lzerbib/streamlit_page/needs')
+import script_cover_letter as script
 
 st.markdown(
     """
