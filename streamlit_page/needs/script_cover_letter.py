@@ -2,7 +2,7 @@ def generate_adress(city):
     if city=='Paris':
         return '35 Avenue Daumesnil, 94160, Saint-Mandé'
     elif city=='London':
-        return '24 Victoria Street, London, WC39 1FO'
+        return '66 Weymouth Street, London, W1G 6NZ'
     elif city=='New York':
         return '271 Bleecker St, New York, NY 10014'
 
