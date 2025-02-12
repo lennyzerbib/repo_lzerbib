@@ -10,8 +10,8 @@ import numpy as np
 import sys
 
 
-# sys.path.append('/Users/lennyzerbib/repo_lzerbib/streamlit_page/needs/')
-import streamlit_page.needs.get_volatility as vol
+sys.path.append('/Users/lennyzerbib/repo_lzerbib/streamlit_page/needs/')
+import get_volatility as vol
 
 st.markdown(
     """
