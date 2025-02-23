@@ -4,6 +4,10 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from scipy.stats import norm
 import time
+import imageio
+import os
+from io import BytesIO
+from itertools import product
 
 
 def generate_greek_data(params, greek_name, option_type):
@@ -76,7 +80,6 @@ def generate_multi_param_data(base_params, vary_params, steps=20):
         param_values[param] = np.linspace(start, end, steps)
 
     # Generate all combinations of parameter values
-    from itertools import product
     combinations = list(product(*[param_values[param] for param in vary_params]))
 
     # Calculate Greeks for each combination
@@ -178,6 +181,91 @@ def create_animated_plot(data, vary_params, greeks=['delta', 'gamma', 'vega', 't
     return fig
 
 
+# Désactiver le cache pour cette fonction
+@st.cache_data(persist=True)
+def generate_gif_frames(base_params, greek_name, option_type, vary_param, output_path, _timestamp):
+    frames = []
+    points = 50  # Nombre de frames pour l'animation
+
+    # Définir la plage pour l'axe x selon la grecque
+    if greek_name.lower() in ['delta', 'gamma']:
+        plot_param = 'S'
+        x_range = np.linspace(base_params['S'] * 0.5, base_params['S'] * 1.5, points)
+    elif greek_name.lower() == 'theta':
+        plot_param = 'T'
+        x_range = np.linspace(0.1, 2, points)
+    elif greek_name.lower() == 'vega':
+        plot_param = 'sigma'
+        x_range = np.linspace(0.1, 0.5, points)
+    else:  # rho
+        plot_param = 'r'
+        x_range = np.linspace(0.01, 0.1, points)
+
+    # Générer la courbe de base (pointillés)
+    base_x, base_y = generate_greek_data(base_params, greek_name.lower(), option_type)
+
+    # Définir une plage de valeurs pour le paramètre choisi (vary_param)
+    param_ranges = {
+        'S': (base_params['S'] * 0.5, base_params['S'] * 1.5),
+        'K': (base_params['K'] * 0.5, base_params['K'] * 1.5),
+        'T': (0.1, 2.0),
+        'r': (0.01, 0.10),
+        'sigma': (0.1, 0.5),
+        'q': (0.0, 0.10)
+    }
+    vary_values = np.linspace(param_ranges[vary_param][0], param_ranges[vary_param][1], points)
+
+    # Générer les données pour chaque valeur du paramètre variable
+    new_curves = []
+    for value in vary_values:
+        temp_params = base_params.copy()
+        temp_params[vary_param] = value
+        x, y = generate_greek_data(temp_params, greek_name.lower(), option_type)
+        new_curves.append((x, y))
+
+    # Création des frames pour le GIF
+    for i in range(points):
+        fig = go.Figure()
+
+        # Courbe de base en pointillés
+        fig.add_trace(go.Scatter(
+            x=base_x,
+            y=base_y,
+            mode='lines',
+            line=dict(color='gray', width=2, dash='dash'),
+            name='Base Parameters'
+        ))
+
+        # Courbe évolutive en noir pour la valeur actuelle de vary_param
+        new_x, new_y = new_curves[i]
+        fig.add_trace(go.Scatter(
+            x=new_x,
+            y=new_y,
+            mode='lines',
+            line=dict(color='black', width=2),
+            name=f'{vary_param} = {vary_values[i]:.2f}'
+        ))
+
+        # Mise à jour du layout
+        fig.update_layout(
+            title=f"{greek_name.capitalize()} Evolution with Varying {vary_param}",
+            xaxis_title=plot_param,
+            yaxis_title=greek_name.capitalize(),
+            height=500,
+            width=700,
+            showlegend=True,
+            plot_bgcolor='white'
+        )
+
+        # Conversion en image pour le GIF
+        img_bytes = fig.to_image(format="png")
+        frames.append(imageio.imread(img_bytes))
+
+    # Sauvegarde du GIF
+    imageio.mimsave(output_path, frames, duration=0.1)
+    return output_path
+
+
 # Page setup
 st.set_page_config(page_title="Greeks Sensitivity Analysis", layout="wide")
 st.title("Options Greeks Sensitivity Analysis")
@@ -188,13 +276,13 @@ tab1, tab2 = st.tabs(["Static Analysis", "Animated Analysis"])
 with tab1:
     col1, col2, col3 = st.columns(3)
     with col1:
-        option_type = st.selectbox("Option Type", ["Call", "Put"]).lower()
+        option_type = st.selectbox("Option Type", ["Call", "Put"], key="option_type_tab1").lower()
 
     with col2:
-        exercise_style = st.selectbox("Exercise Style", ["European", "American"]).lower()
+        exercise_style = st.selectbox("Exercise Style", ["European", "American"], key="exercise_style_tab1").lower()
 
     with col3:
-        selected_greek = st.selectbox("Select Greek", ["Delta", "Gamma", "Vega", "Theta", "Rho"])
+        selected_greek = st.selectbox("Select Greek", ["Delta", "Gamma", "Vega", "Theta", "Rho"], key="greek_tab1")
 
     # Base parameters in collapsible section
     with st.expander("Base Parameters", expanded=False):
@@ -271,57 +359,32 @@ with tab1:
             "Actual values may differ due to early exercise premium.")
 
 with tab2:
-    st.subheader("Animated Greeks Sensitivity Analysis")
+    st.subheader("Animated Greek Evolution (GIF)")
 
-    # Controls for animated analysis
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
-        option_type = st.selectbox("Option Type (Animated)", ["Call", "Put"]).lower()
+        option_type = st.selectbox("Option Type", ["Call", "Put"], key="option_type_tab2").lower()
     with col2:
-        vary_params = st.multiselect(
-            "Select Parameters to Vary",
-            ["Stock Price (S)", "Strike Price (K)", "Time (T)",
-             "Risk-free Rate (r)", "Volatility (σ)", "Dividend Yield (q)"],
-            default=["Stock Price (S)"]
-        )
+        greek_name = st.selectbox("Select Greek", ["Delta", "Gamma", "Vega", "Theta", "Rho"], key="greek_tab2")
+    with col3:
+        vary_param = st.selectbox("Parameter to Vary", ["S", "K", "T", "r", "q", "sigma"], key="param_tab2")
 
-    # Parameter mapping
-    param_map = {
-        "Stock Price (S)": "S",
-        "Strike Price (K)": "K",
-        "Time (T)": "T",
-        "Risk-free Rate (r)": "r",
-        "Volatility (σ)": "sigma",
-        "Dividend Yield (q)": "q"
+    # Paramètres de base repris de tab1
+    base_params = {
+        'S': S, 'K': K, 'T': T, 'r': r, 'q': q, 'sigma': sigma
     }
 
-    # Convert selected parameters to internal names
-    selected_params = [param_map[p] for p in vary_params]
+    if st.button("Generate GIF", key="generate_gif_button"):
+        # Utiliser un timestamp pour garantir une exécution fraîche
+        timestamp = int(time.time())
+        output_path = f"greek_evolution_{timestamp}.gif"
+        gif_path = generate_gif_frames(base_params, greek_name, option_type, vary_param, output_path, timestamp)
 
-    if len(selected_params) > 0:
-        # Prepare base parameters
-        base_params = {
-            'S': S, 'K': K, 'T': T, 'r': r, 'q': q, 'sigma': sigma,
-            'option_type': option_type
-        }
+        # Affichage du GIF dans Streamlit
+        with open(gif_path, "rb") as file:
+            gif_bytes = file.read()
+        st.image(gif_bytes, caption=f"{greek_name} Evolution with Varying {vary_param}", use_column_width=True)
 
-        # Generate data for animation
-        animation_data = generate_multi_param_data(base_params, selected_params)
-
-        # Create and display animated plot
-        fig = create_animated_plot(animation_data, selected_params)
-        st.plotly_chart(fig, use_container_width=True)
-
-        st.markdown("""
-        ### How to Use the Animation:
-        1. Select the parameters you want to vary using the multi-select dropdown
-        2. Click the 'Play' button to start the animation
-        3. Use the slider to manually control the animation progress
-        4. Watch how the Greeks evolve as the selected parameters change
-
-        The animation shows the continuous evolution of all Greeks as the selected parameters
-        vary across their ranges, helping visualize the relationships between multiple parameters
-        and their effects on option sensitivity.
-        """)
-    else:
-        st.warning("Please select at least one parameter to vary.")
+        # Nettoyage du fichier temporaire
+        if os.path.exists(gif_path):
+            os.remove(gif_path)
