@@ -6,12 +6,16 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import plotly.express as px
 import numpy as np
-
 import sys
 
 
-sys.path.append('/Users/lennyzerbib/repo_lzerbib/streamlit_page/needs/')
+module_path = r'/Users/lennyzerbib/Desktop/repo_lzerbib/streamlit_page/needs/'
+
+if module_path not in sys.path:
+    sys.path.append(module_path)
+
 import get_volatility as vol
+
 
 st.markdown(
     """
