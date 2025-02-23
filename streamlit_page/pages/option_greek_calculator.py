@@ -16,13 +16,10 @@ def calculate_greeks(S, K, T, r, q, sigma, option_type='call'):
     """Calculate option price and all Greeks"""
     d1, d2 = calculate_d1d2(S, K, T, r, q, sigma)
 
-    # Adjust calculations based on option type
     sign = 1 if option_type == 'call' else -1
 
-    # Calculate option price
+    # Calculate option price and Greeks
     price = sign * (S * np.exp(-q * T) * norm.cdf(sign * d1) - K * np.exp(-r * T) * norm.cdf(sign * d2))
-
-    # Calculate Greeks
     delta = sign * np.exp(-q * T) * norm.cdf(sign * d1)
     gamma = np.exp(-q * T) * norm.pdf(d1) / (S * sigma * np.sqrt(T))
     vega = S * np.exp(-q * T) * np.sqrt(T) * norm.pdf(d1)
@@ -73,64 +70,53 @@ def generate_greek_data(params, greek_name, option_type):
     return x_range, np.array(y_values)
 
 
-# Streamlit UI
+# Page configuration
 st.set_page_config(page_title="Options Greeks Calculator", layout="wide")
 st.title("Options Greeks Calculator")
 
-# Create two columns for layout
-col1, col2 = st.columns([1, 2])
+# Main selection controls in a horizontal layout
+col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.subheader("Option Parameters")
-
-    # Input parameters
-    S = st.number_input("Stock Price (S)", value=100.0, min_value=1.0)
-    K = st.number_input("Strike Price (K)", value=100.0, min_value=1.0)
-    T = st.number_input("Time to Expiration (T) in years", value=1.0, min_value=0.1)
-    r = st.number_input("Risk-free Rate (r)", value=0.05, min_value=0.0, max_value=1.0)
-    q = st.number_input("Dividend Yield (q)", value=0.02, min_value=0.0, max_value=1.0)
-    sigma = st.number_input("Volatility (σ)", value=0.2, min_value=0.01, max_value=1.0)
-
-    # Option type selection
     option_type = st.selectbox("Option Type", ["Call", "Put"]).lower()
-    exercise_style = st.selectbox("Exercise Style", ["European", "American"]).lower()
-
-    # Store parameters in a dictionary
-    params = {
-        'S': S, 'K': K, 'T': T, 'r': r, 'q': q, 'sigma': sigma
-    }
 
 with col2:
-    # Calculate current values
-    current_values = calculate_greeks(S, K, T, r, q, sigma, option_type)
+    exercise_style = st.selectbox("Exercise Style", ["European", "American"]).lower()
 
-    st.subheader("Current Values")
-    col_metrics1, col_metrics2, col_metrics3 = st.columns(3)
+with col3:
+    selected_greek = st.selectbox("Select Greek", ["Delta", "Gamma", "Vega", "Theta", "Rho"])
 
-    with col_metrics1:
-        st.metric("Price", f"{current_values['price']:.4f}")
-        st.metric("Delta", f"{current_values['delta']:.4f}")
+# Parameters in collapsible section
+with st.expander("Parameters", expanded=False):
+    col_params1, col_params2 = st.columns(2)
 
-    with col_metrics2:
-        st.metric("Gamma", f"{current_values['gamma']:.4f}")
-        st.metric("Vega", f"{current_values['vega']:.4f}")
+    with col_params1:
+        S = st.slider("Stock Price (S)", min_value=50.0, max_value=150.0, value=100.0, step=1.0)
+        K = st.slider("Strike Price (K)", min_value=50.0, max_value=150.0, value=100.0, step=1.0)
+        T = st.slider("Time to Expiration (T) in years", min_value=0.1, max_value=2.0, value=1.0, step=0.1)
 
-    with col_metrics3:
-        st.metric("Theta", f"{current_values['theta']:.4f}")
-        st.metric("Rho", f"{current_values['rho']:.4f}")
+    with col_params2:
+        r = st.slider("Risk-free Rate (r)", min_value=0.01, max_value=0.10, value=0.05, step=0.01)
+        q = st.slider("Dividend Yield (q)", min_value=0.0, max_value=0.10, value=0.02, step=0.01)
+        sigma = st.slider("Volatility (σ)", min_value=0.1, max_value=0.5, value=0.2, step=0.05)
 
-# Greek selection and plotting
-selected_greek = st.selectbox("Select Greek to Plot", ["Delta", "Gamma", "Vega", "Theta", "Rho"])
+# Store parameters
+params = {
+    'S': S, 'K': K, 'T': T, 'r': r, 'q': q, 'sigma': sigma
+}
 
-# Generate plot data
+# Calculate current values
+current_values = calculate_greeks(S, K, T, r, q, sigma, option_type)
+
+# Generate and display plot
 x_values, y_values = generate_greek_data(params, selected_greek.lower(), option_type)
 
-# Create plot
 fig = go.Figure()
 fig.add_trace(go.Scatter(
     x=x_values,
     y=y_values,
     mode='lines',
+    line=dict(color='#1f77b4', width=2),
     name=selected_greek
 ))
 
@@ -147,15 +133,34 @@ fig.update_layout(
     title=f"{selected_greek} vs {x_label}",
     xaxis_title=x_label,
     yaxis_title=selected_greek,
-    height=500,
-    hovermode='x unified'
+    height=600,
+    hovermode='x unified',
+    plot_bgcolor='white',
+    paper_bgcolor='white',
+    xaxis=dict(gridcolor='lightgray'),
+    yaxis=dict(gridcolor='lightgray')
 )
 
 st.plotly_chart(fig, use_container_width=True)
 
-# Add notes about calculations
-st.info("""
-Note: This calculator uses the Black-Scholes model for European options. 
-For American options, it uses the same calculations as an approximation. 
-The actual values for American options may differ due to early exercise premium.
-""")
+
+# Display current values in a clean grid
+st.subheader("Current Values")
+col_metrics1, col_metrics2, col_metrics3 = st.columns(3)
+
+with col_metrics1:
+    st.metric("Price", f"{current_values['price']:.4f}")
+    st.metric("Delta", f"{current_values['delta']:.4f}")
+
+with col_metrics2:
+    st.metric("Gamma", f"{current_values['gamma']:.4f}")
+    st.metric("Vega", f"{current_values['vega']:.4f}")
+
+with col_metrics3:
+    st.metric("Theta", f"{current_values['theta']:.4f}")
+    st.metric("Rho", f"{current_values['rho']:.4f}")
+
+
+if exercise_style == "american":
+    st.info(
+        "Note: For American options, this calculator uses the Black-Scholes model as an approximation. Actual values may differ due to early exercise premium.")
