@@ -1,6 +1,7 @@
 import requests
 import numpy as np
 import yfinance as yf
+import requests
 from datetime import datetime, timedelta
 import pandas as pd
 from time import time
@@ -25,6 +26,10 @@ yesterday = today - timedelta(days=1)
 
 dict_tails = {'3m':125, '6m':250, '9m':375, '1y':500}
 
+session = requests.Session()
+session.headers.update({'User-Agent': 'Mozilla/5.0'})  # Simule un navigateur
+
+
 ###################################################################################################################################
 #                                                          GET VOLATILITY                                                         #
 ###################################################################################################################################
@@ -46,7 +51,7 @@ def get_spot(ticker_symbol):
 
 def get_implied_volatility(ticker):
     window_size=4
-    stock = yf.Ticker(ticker)
+    stock = yf.Ticker(ticker, session=session)
     option_dates = stock.options
     
     today = datetime.today().date()
